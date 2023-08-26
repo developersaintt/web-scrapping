@@ -1,13 +1,28 @@
 import puppeteer from "puppeteer";
 
 export default async function handler(req, res) {
+  const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
   let browser = null;
   try {
-    browser = await puppeteer.launch({
-      // args: ["--no-sandbox", "--disable-setuid-sandbox", "--headless=new"],
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    IS_PRODUCTION
+      ? // Connect to browserless so we don't run Chrome on the same hardware in production
+        (browser = await puppeteer.connect({
+          browserWSEndpoint:
+            "wss://chrome.browserless.io?token=57e91f8b-ad31-46d2-9f62-90c112e8b4cd",
+        }))
+      : // Run the browser locally while in development
+        (browser = await puppeteer.launch({
+          // args: ["--no-sandbox", "--disable-setuid-sandbox", "--headless=new"],
+          headless: "new",
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        }));
+
+    // browser = await puppeteer.launch({
+    //   // args: ["--no-sandbox", "--disable-setuid-sandbox", "--headless=new"],
+    //   headless: "new",
+    //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    // });
 
     if (!req.query.url)
       return res.status(400).json({ error: "url is required" });
